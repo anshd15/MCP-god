@@ -1,0 +1,9 @@
+[project]
+name = "mcp-god-python"
+version = "0.1.0"
+description = "Minimal FastMCP example server for the MCP-god knowledge base"
+requires-python = ">=3.10"
+dependencies = ["mcp[cli]>=1.9"]
+
+[project.scripts]
+mcp-god-python = "server:mcp.run"

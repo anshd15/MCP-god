@@ -1,0 +1,21 @@
+{
+  "name": "mcp-god-typescript",
+  "version": "0.1.0",
+  "description": "Minimal TypeScript MCP example server for the MCP-god knowledge base",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": { "mcp-god-typescript": "dist/index.js" },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
