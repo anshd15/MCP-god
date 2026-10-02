@@ -6,6 +6,7 @@
 - [x] Custom MCP build guide (Python + TypeScript)
 - [x] Security and auth notes
 - [x] Two runnable starter servers
+- [x] Animated companion site (site/) deployed on Vercel
 
 ## Phase 2 - Hands-on lab (next)
 - [ ] Build 5 servers of increasing complexity: echo -> filesystem -> SQLite -> REST wrapper -> stateful agent tool
