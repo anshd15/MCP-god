@@ -3,6 +3,9 @@
 A personal knowledge base and build lab for the **Model Context Protocol (MCP)**.
 Goal: understand every kind of MCP server/client/transport deeply enough to build, audit, and ship custom ones.
 
+**Live animated guide:** https://mcp-god.vercel.app  
+Custom server build steps, the session lifecycle, and JSON-RPC data flow, animated. Source in [site/](site/).
+
 ## What is in here
 
 | Section | File | Purpose |
@@ -15,6 +18,7 @@ Goal: understand every kind of MCP server/client/transport deeply enough to buil
 | Build custom | [docs/06-build-custom-mcp.md](docs/06-build-custom-mcp.md) | Step-by-step: Python + TypeScript, testing, publishing |
 | Security | [docs/07-security-and-auth.md](docs/07-security-and-auth.md) | OAuth, prompt injection, sandboxing, trust boundaries |
 | Examples | [examples/](examples/) | Minimal runnable servers |
+| Animated site | [site/](site/) | Live at https://mcp-god.vercel.app |
 | Roadmap | [ROADMAP.md](ROADMAP.md) | Where this project goes next |
 
 ## Outline (Phase 1 = this repo's first 6 commits)
