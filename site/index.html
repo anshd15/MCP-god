@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MCP Server Builder</title>
+  <meta name="description" content="An animated guide to building a custom Model Context Protocol server and how data flows between host, client, and server." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#build">Skip to the build guide</a>
+
+  <header class="nav">
+    <a class="brand" href="#top">
+      <span class="brand-dot"></span>
+      MCP<span class="brand-thin">-god</span>
+    </a>
+    <nav>
+      <a href="#flow">Data flow</a>
+      <a href="#lifecycle">Lifecycle</a>
+      <a href="#build">Build</a>
+      <a href="#primitives">Primitives</a>
+      <a href="https://github.com/anshd15/MCP-god" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+    <button id="theme" class="theme-btn" aria-label="Toggle theme" title="Toggle theme">◐</button>
+  </header>
+
+  <main id="top">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-bg" aria-hidden="true">
+        <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
+        <svg class="grid" viewBox="0 0 100 100" preserveAspectRatio="none"><defs><pattern id="g" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M4 0H0V4" fill="none" stroke="currentColor" stroke-width="0.08"/></pattern></defs><rect width="100" height="100" fill="url(#g)"/></svg>
+      </div>
+      <p class="eyebrow reveal">Model Context Protocol</p>
+      <h1 class="reveal">Build a custom <span class="grad">MCP server</span><br/>and watch the data move.</h1>
+      <p class="lede reveal">Host, client, server. Tools, resources, prompts. One protocol, animated end to end, so the mental model sticks.</p>
+      <div class="cta reveal">
+        <a class="btn primary" href="#flow">Start with the flow</a>
+        <a class="btn ghost" href="#build">Jump to code</a>
+      </div>
+      <div class="hero-stats reveal">
+        <div><b>3</b><span>roles</span></div>
+        <div><b>6</b><span>primitives</span></div>
+        <div><b>2</b><span>transports</span></div>
+        <div><b>1</b><span>JSON-RPC wire</span></div>
+      </div>
+    </section>
+
+    <!-- DATA FLOW -->
+    <section id="flow" class="section">
+      <div class="section-head reveal">
+        <p class="eyebrow">01 · Data flow</p>
+        <h2>Who talks to whom</h2>
+        <p>The LLM never touches your server. The host decides, the client relays, the server answers. Packets below are live.</p>
+      </div>
+      <div class="flow-wrap reveal">
+        <svg id="flowSvg" viewBox="0 0 960 420" role="img" aria-label="Animated diagram of host, client, and server exchanging JSON-RPC messages">
+          <defs>
+            <linearGradient id="lg" x1="0" x2="1"><stop offset="0" stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-2)"/></linearGradient>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--line)"/></marker>
+          </defs>
+
+          <!-- boxes -->
+          <g class="node" id="nHost">
+            <rect x="40" y="130" width="220" height="160" rx="18"/>
+            <text x="150" y="170" class="t-title">HOST</text>
+            <text x="150" y="196" class="t-sub">Claude Code · Cursor · your agent</text>
+            <rect x="70" y="214" width="160" height="50" rx="10" class="inner"/>
+            <text x="150" y="236" class="t-inner">LLM loop</text>
+            <text x="150" y="254" class="t-inner dim">permissions · UI</text>
+          </g>
+          <g class="node" id="nClient">
+            <rect x="370" y="150" width="220" height="120" rx="18"/>
+            <text x="480" y="190" class="t-title">CLIENT</text>
+            <text x="480" y="216" class="t-sub">1 per server · in the host</text>
+            <text x="480" y="244" class="t-inner dim">initialize · correlate ids</text>
+          </g>
+          <g class="node" id="nServer">
+            <rect x="700" y="130" width="220" height="160" rx="18"/>
+            <text x="810" y="170" class="t-title">SERVER</text>
+            <text x="810" y="196" class="t-sub">your code</text>
+            <rect x="730" y="214" width="160" height="50" rx="10" class="inner"/>
+            <text x="810" y="236" class="t-inner">tools · resources</text>
+            <text x="810" y="254" class="t-inner dim">prompts</text>
+          </g>
+
+          <!-- links -->
+          <path id="pHC" class="link" d="M260 190 C 310 190, 320 190, 370 190" marker-end="url(#arr)"/>
+          <path id="pCH" class="link" d="M370 230 C 320 230, 310 230, 260 230" marker-end="url(#arr)"/>
+          <path id="pCS" class="link" d="M590 190 C 640 190, 650 190, 700 190" marker-end="url(#arr)"/>
+          <path id="pSC" class="link" d="M700 230 C 650 230, 640 230, 590 230" marker-end="url(#arr)"/>
+
+          <text x="315" y="178" class="t-lbl">intent</text>
+          <text x="315" y="252" class="t-lbl">result</text>
+          <text x="645" y="178" class="t-lbl">JSON-RPC</text>
+          <text x="645" y="252" class="t-lbl">stdio / HTTP</text>
+
+          <!-- packets injected by flow.js -->
+          <g id="packets"></g>
+
+          <!-- ticker -->
+          <rect x="40" y="330" width="880" height="56" rx="12" class="ticker-bg"/>
+          <text id="tickerText" x="60" y="364" class="t-mono">{ "jsonrpc": "2.0", "id": 1, "method": "initialize" }</text>
+        </svg>
+        <div class="flow-legend">
+          <span><i class="sw sw-req"></i>request</span>
+          <span><i class="sw sw-res"></i>response</span>
+          <span><i class="sw sw-ntf"></i>notification</span>
+          <button id="flowToggle" class="btn tiny">Pause</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIFECYCLE -->
+    <section id="lifecycle" class="section alt">
+      <div class="section-head reveal">
+        <p class="eyebrow">02 · Lifecycle</p>
+        <h2>One session, step by step</h2>
+        <p>Every MCP session follows the same handshake. Click a step or let it auto-play.</p>
+      </div>
+      <div class="life reveal">
+        <ol id="lifeSteps" class="life-steps"></ol>
+        <div class="life-stage">
+          <div class="lane"><span class="lane-name">Client</span><div class="lane-line"></div></div>
+          <div class="lane"><span class="lane-name">Server</span><div class="lane-line"></div></div>
+          <div id="lifeMsg" class="life-msg"><code></code></div>
+          <div id="lifeArrow" class="life-arrow"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUILD -->
+    <section id="build" class="section">
+      <div class="section-head reveal">
+        <p class="eyebrow">03 · Build it</p>
+        <h2>A custom server in five moves</h2>
+        <p>Python with FastMCP on the left, TypeScript SDK on the right. Same shape, same protocol.</p>
+      </div>
+      <div class="build reveal">
+        <div class="build-tabs" role="tablist">
+          <button class="tab active" data-lang="py" role="tab" aria-selected="true">Python</button>
+          <button class="tab" data-lang="ts" role="tab" aria-selected="false">TypeScript</button>
+        </div>
+        <div class="build-grid">
+          <ol id="buildSteps" class="build-steps"></ol>
+          <div class="code-card">
+            <div class="code-bar"><span></span><span></span><span></span><em id="codeFile">server.py</em></div>
+            <pre><code id="codeOut"></code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRIMITIVES -->
+    <section id="primitives" class="section alt">
+      <div class="section-head reveal">
+        <p class="eyebrow">04 · Primitives</p>
+        <h2>Six things MCP can express</h2>
+        <p>Three the server offers, three the client offers back. Hover to see who controls each.</p>
+      </div>
+      <div class="cards reveal">
+        <article class="card" style="--i:0"><div class="card-ico">⚙</div><h3>Tools</h3><p>Model-controlled functions with a JSON Schema. The <code>POST</code> of MCP.</p><span class="pill">server → model</span></article>
+        <article class="card" style="--i:1"><div class="card-ico">▤</div><h3>Resources</h3><p>App-controlled read-only data at a URI. The <code>GET</code> of MCP.</p><span class="pill">server → app</span></article>
+        <article class="card" style="--i:2"><div class="card-ico">✎</div><h3>Prompts</h3><p>User-controlled templates. Slash commands with arguments.</p><span class="pill">server → user</span></article>
+        <article class="card" style="--i:3"><div class="card-ico">✦</div><h3>Sampling</h3><p>Server borrows the host's LLM. No API key needed on the server.</p><span class="pill">server ← host</span></article>
+        <article class="card" style="--i:4"><div class="card-ico">⌂</div><h3>Roots</h3><p>Host tells the server which folders are in scope. Its sandbox.</p><span class="pill">server ← host</span></article>
+        <article class="card" style="--i:5"><div class="card-ico">?</div><h3>Elicitation</h3><p>Server asks the user a structured question mid-call.</p><span class="pill">server ← user</span></article>
+      </div>
+    </section>
+
+    <!-- TRANSPORTS -->
+    <section class="section">
+      <div class="section-head reveal">
+        <p class="eyebrow">05 · Transports</p>
+        <h2>Two ways to move bytes</h2>
+      </div>
+      <div class="transports reveal">
+        <div class="tp">
+          <h3>stdio</h3>
+          <div class="pipe"><span class="pkt"></span><span class="pkt d2"></span><span class="pkt d3"></span></div>
+          <p>Host spawns your process. stdin in, stdout out, stderr for logs. Local only, zero auth, fastest to build.</p>
+        </div>
+        <div class="tp">
+          <h3>Streamable HTTP</h3>
+          <div class="pipe http"><span class="pkt"></span><span class="pkt d2"></span><span class="pkt d3"></span></div>
+          <p>One <code>/mcp</code> endpoint. POST per message, SSE upgrade for streaming, <code>Mcp-Session-Id</code> for state, OAuth 2.1 for auth.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section cta-end">
+      <div class="reveal">
+        <h2>Now go read the deep dives.</h2>
+        <p>Seven markdown guides and two runnable starter servers live in the repo.</p>
+        <a class="btn primary" href="https://github.com/anshd15/MCP-god" target="_blank" rel="noopener">Open MCP-god on GitHub</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>MCP-god · an animated companion to the docs</span>
+    <span>Built by anshd15 · MIT</span>
+  </footer>
+
+  <script src="js/flow.js" defer></script>
+  <script src="js/lifecycle.js" defer></script>
+  <script src="js/steps.js" defer></script>
+  <script src="js/main.js" defer></script>
+</body>
+</html>
