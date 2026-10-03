@@ -1,0 +1,28 @@
+[project]
+name = "mcp-agent"
+version = "0.1.0"
+description = "Planner/executor multi-agent system over MCP servers, with guardrails, retries, and OpenTelemetry tracing"
+requires-python = ">=3.10"
+dependencies = [
+    "anthropic>=0.70",
+    "mcp>=1.9",
+    "jsonschema>=4.21",
+    "opentelemetry-sdk>=1.25",
+    "opentelemetry-exporter-otlp-proto-http>=1.25",
+]
+
+[project.scripts]
+mcp-agent = "mcp_agent.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "anyio>=4"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

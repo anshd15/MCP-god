@@ -1,0 +1,3 @@
+traces/
+data/*.db
+.pytest_cache/
