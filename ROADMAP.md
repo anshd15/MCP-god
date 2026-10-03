@@ -14,6 +14,15 @@
 - [ ] Add MCP Inspector walkthrough with screenshots
 - [ ] Add a test harness: spawn server over stdio, assert `tools/list` output
 
+## Phase 2.5 - Multi-agent system (DONE, agent/)
+- [x] Planner/executor agents on Claude over an MCP hub (fs + SQLite servers)
+- [x] Retries, tool policy + approvals, schema validation, budgets
+- [x] Prompt-injection fencing and scanning of tool output
+- [x] OpenTelemetry tracing (JSONL + OTLP), trace viewer CLI
+- [x] Offline end-to-end tests with a scripted model
+- [ ] Eval set of tasks with graded answers, run in CI
+- [ ] Parallel step execution for independent steps
+
 ## Phase 3 - Remote + auth
 - [ ] Deploy a Streamable HTTP server (Cloudflare Workers or a small VPS)
 - [ ] Implement OAuth 2.1 with PKCE, dynamic client registration

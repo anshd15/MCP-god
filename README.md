@@ -18,6 +18,7 @@ Custom server build steps, the session lifecycle, and JSON-RPC data flow, animat
 | Build custom | [docs/06-build-custom-mcp.md](docs/06-build-custom-mcp.md) | Step-by-step: Python + TypeScript, testing, publishing |
 | Security | [docs/07-security-and-auth.md](docs/07-security-and-auth.md) | OAuth, prompt injection, sandboxing, trust boundaries |
 | Examples | [examples/](examples/) | Minimal runnable servers |
+| Agent | [agent/](agent/) | Planner/executor multi-agent system over MCP with guardrails, retries, and tracing |
 | Animated site | [site/](site/) | Live at https://mcp-god.vercel.app |
 | Roadmap | [ROADMAP.md](ROADMAP.md) | Where this project goes next |
 
