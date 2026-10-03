@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "fs": {"command": "python", "args": ["servers/fs_server.py"]},
+    "sqlite": {"command": "python", "args": ["servers/sqlite_server.py"]}
+  },
+  "policy": {
+    "deny": [],
+    "ask": ["*__write_*"],
+    "allow": []
+  }
+}
