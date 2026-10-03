@@ -12,6 +12,7 @@ import sqlite3
 from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 DB_PATH = Path(os.environ.get("MCP_SQLITE_DB", Path(__file__).parent.parent / "data" / "demo.db")).resolve()
@@ -67,7 +68,7 @@ def query(sql: str) -> str:
         try:
             cur = con.execute(sql)
         except sqlite3.DatabaseError as e:
-            raise ValueError(f"query rejected: {e}") from e
+            raise ToolError(f"query rejected: {e}") from e
         cols = [d[0] for d in cur.description or []]
         rows = cur.fetchmany(MAX_ROWS + 1)
     out = [" | ".join(cols)] + [" | ".join(str(v) for v in r) for r in rows[:MAX_ROWS]]

@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 ROOT = Path(os.environ.get("MCP_FS_ROOT", Path(__file__).parent.parent / "workspace")).resolve()
@@ -24,7 +25,7 @@ READ_ONLY = ToolAnnotations(read_only_hint=True, open_world_hint=False)
 def _resolve(rel: str) -> Path:
     p = (ROOT / rel).resolve()
     if p != ROOT and ROOT not in p.parents:
-        raise ValueError(f"path {rel!r} escapes the sandbox")
+        raise ToolError(f"path {rel!r} escapes the sandbox")
     return p
 
 
@@ -33,7 +34,7 @@ def list_dir(path: str = ".") -> str:
     """List entries in a directory (relative to the sandbox root). Directories end with '/'."""
     d = _resolve(path)
     if not d.is_dir():
-        raise ValueError(f"{path!r} is not a directory")
+        raise ToolError(f"{path!r} is not a directory")
     entries = sorted(e.name + ("/" if e.is_dir() else "") for e in d.iterdir())
     return "\n".join(entries) or "(empty)"
 
@@ -43,7 +44,7 @@ def read_file(path: str) -> str:
     """Read a UTF-8 text file (relative to the sandbox root)."""
     f = _resolve(path)
     if not f.is_file():
-        raise ValueError(f"{path!r} is not a file")
+        raise ToolError(f"{path!r} is not a file")
     data = f.read_bytes()[:MAX_READ_BYTES]
     return data.decode("utf-8", errors="replace")
 
