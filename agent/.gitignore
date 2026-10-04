@@ -1,3 +1,4 @@
 traces/
 data/*.db
 .pytest_cache/
+evals/results/

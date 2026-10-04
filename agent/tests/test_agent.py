@@ -219,3 +219,30 @@ def test_web_server_blocks_off_allowlist_and_private_targets(monkeypatch):
     with pytest.raises(ToolError, match="non-public"):
         web_server.check_url("https://example.com/")
     assert "Hello" in web_server.html_to_text("<script>x()</script><p>Hello &amp; bye</p>")
+
+
+def test_eval_harness_grades_answer_files_and_tools(tmp_path):
+    from mcp_agent.evals import report, run_eval
+
+    task = {
+        "id": "write-report",
+        "task": "Save the trimmer price to price.md",
+        "approve": True,
+        "checks": [
+            {"type": "number", "value": 59},
+            {"type": "file_contains", "path": "price.md", "value": "59"},
+            {"type": "tool_called", "value": "fs__write_file"},
+            {"type": "tool_not_called", "value": "sqlite__query"},
+        ],
+    }
+    llm = ScriptedLLM([
+        text(json.dumps({"steps": [{"goal": "write price.md", "tools_hint": []}]})),
+        tool_use("fs__write_file", {"path": "price.md", "content": "trimmer: 59.0"}),
+        text("Wrote price.md"),
+        text("Trimmer costs 59.0; saved to price.md."),
+    ])
+    [res] = anyio.run(lambda: run_eval([task], config=CONFIG, workspace=ROOT / "workspace", llm=llm,
+                                       trace_dir=tmp_path))
+    assert res.passed, res.checks
+    assert not (ROOT / "workspace" / "price.md").exists()  # ran in a scratch copy
+    assert "1/1 passed" in report([res])

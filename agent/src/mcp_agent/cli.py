@@ -3,6 +3,7 @@
     mcp-agent run "How much revenue did trimmers make? Save a summary to report.md"
     mcp-agent run --yes "..."          # auto-approve mutating tools
     mcp-agent trace traces/<run_id>.jsonl
+    mcp-agent eval evals/tasks.jsonl --min-pass 0.8
 """
 
 from __future__ import annotations
@@ -43,7 +44,15 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--max-cost", type=float, default=2.0, help="stop the run past this many USD")
     tr = sub.add_parser("trace", help="print a trace file as a span tree")
     tr.add_argument("file", type=Path)
+    ev = sub.add_parser("eval", help="run a task set and grade the answers")
+    ev.add_argument("tasks", type=Path)
+    ev.add_argument("--config", default="servers.json")
+    ev.add_argument("--only", nargs="*", help="task ids to run")
+    ev.add_argument("--min-pass", type=float, default=0.0, help="exit 1 below this pass rate")
     args = p.parse_args(argv)
+
+    if args.cmd == "eval":
+        return _eval(args)
 
     if args.cmd == "trace":
         print(render_tree(args.file))
@@ -59,6 +68,20 @@ def main(argv: list[str] | None = None) -> int:
         file=sys.stderr,
     )
     return 1 if result.errors else 0
+
+
+def _eval(args: argparse.Namespace) -> int:
+    from .evals import load_tasks, report, run_eval, save
+
+    tasks = load_tasks(args.tasks)
+    if args.only:
+        tasks = [t for t in tasks if t["id"] in set(args.only)]
+    results = anyio.run(lambda: run_eval(tasks, config=args.config))
+    print(report(results))
+    print(f"
+results: {save(results)}", file=sys.stderr)
+    rate = sum(r.passed for r in results) / max(len(results), 1)
+    return 0 if rate >= args.min_pass else 1
 
 
 if __name__ == "__main__":
