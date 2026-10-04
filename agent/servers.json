@@ -1,11 +1,29 @@
 {
   "servers": {
-    "fs": {"command": "python", "args": ["servers/fs_server.py"]},
-    "sqlite": {"command": "python", "args": ["servers/sqlite_server.py"]}
+    "fs": {
+      "command": "python",
+      "args": [
+        "servers/fs_server.py"
+      ]
+    },
+    "sqlite": {
+      "command": "python",
+      "args": [
+        "servers/sqlite_server.py"
+      ]
+    },
+    "web": {
+      "command": "python",
+      "args": [
+        "servers/web_server.py"
+      ]
+    }
   },
   "policy": {
     "deny": [],
-    "ask": ["*__write_*"],
+    "ask": [
+      "*__write_*"
+    ],
     "allow": []
   }
 }

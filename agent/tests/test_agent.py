@@ -200,3 +200,22 @@ def test_hub_connects_over_streamable_http():
     finally:
         proc.terminate()
         proc.wait(timeout=10)
+
+
+def test_web_server_blocks_off_allowlist_and_private_targets(monkeypatch):
+    import sys
+
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    sys.path.insert(0, str(ROOT / "servers"))
+    import web_server
+
+    assert web_server.check_url("https://docs.python.org/3/", resolve=False) == "docs.python.org"
+    for bad in ["file:///etc/passwd", "https://evil.com/", "http://169.254.169.254/latest/meta-data"]:
+        with pytest.raises(ToolError):
+            web_server.check_url(bad, resolve=False)
+    # An allowlisted name that resolves to a private address is still refused.
+    monkeypatch.setattr(web_server.socket, "getaddrinfo", lambda *a, **k: [(0, 0, 0, "", ("10.0.0.5", 443))])
+    with pytest.raises(ToolError, match="non-public"):
+        web_server.check_url("https://example.com/")
+    assert "Hello" in web_server.html_to_text("<script>x()</script><p>Hello &amp; bye</p>")
