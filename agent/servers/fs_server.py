@@ -4,7 +4,8 @@ Every path is resolved against MCP_FS_ROOT (default: ../workspace) and
 rejected if it escapes it. Read tools are marked read-only; write_file is
 marked destructive so the agent's guardrails ask before running it.
 
-Run: uv run servers/fs_server.py
+Run: uv run servers/fs_server.py              (stdio)
+     MCP_HTTP_PORT=8765 uv run servers/fs_server.py   (Streamable HTTP at /mcp)
 """
 
 import os
@@ -80,4 +81,7 @@ def write_file(path: str, content: str) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
+    if port := os.environ.get("MCP_HTTP_PORT"):
+        mcp.run("streamable-http", host="127.0.0.1", port=int(port))
+    else:
+        mcp.run()

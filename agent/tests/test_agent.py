@@ -10,7 +10,7 @@ import anyio
 import pytest
 
 from mcp_agent.guardrails import Budget, BudgetExceeded, Decision, Policy, scan_injection, wrap_untrusted
-from mcp_agent.hub import HubTool, MCPHub, TransientToolError, load_config
+from mcp_agent.hub import HubTool, MCPHub, ServerSpec, TransientToolError, load_config
 from mcp_agent.orchestrator import run_task
 from mcp_agent.retry import with_retry
 from mcp_agent.tracing import render_tree
@@ -165,3 +165,38 @@ def test_cost_accounting_prices_cache_and_fallback_model():
     b = Budget(max_cost_usd=1.0)
     with pytest.raises(BudgetExceeded):
         b.charge_cost(1.5)
+
+
+def test_hub_connects_over_streamable_http():
+    import os
+    import socket
+    import subprocess
+    import sys
+    import time
+
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    proc = subprocess.Popen([sys.executable, str(ROOT / "servers" / "fs_server.py")],
+                            env={**os.environ, "MCP_HTTP_PORT": str(port)},
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.time() + 20
+        while time.time() < deadline:
+            try:
+                socket.create_connection(("127.0.0.1", port), timeout=0.5).close()
+                break
+            except OSError:
+                time.sleep(0.2)
+
+        async def go():
+            spec = ServerSpec("remote", url=f"http://127.0.0.1:{port}/mcp")
+            async with MCPHub([spec]) as hub:
+                assert "remote__read_file" in hub.tools
+                out = await hub.call("remote__read_file", {"path": "notes.md"})
+                assert "trimmer" in out.text
+
+        anyio.run(go)
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)

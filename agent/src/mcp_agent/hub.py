@@ -16,7 +16,9 @@ from pathlib import Path
 from typing import Any
 
 import anyio
+import httpx2
 from mcp import ClientSession, StdioServerParameters, stdio_client
+from mcp.client.streamable_http import streamable_http_client
 from mcp.types import ToolAnnotations
 
 SEP = "__"
@@ -28,11 +30,15 @@ class TransientToolError(Exception):
 
 @dataclass(frozen=True)
 class ServerSpec:
+    """A local stdio server (command) or a remote Streamable HTTP server (url)."""
+
     name: str
-    command: str
+    command: str | None = None
     args: list[str] = field(default_factory=list)
     env: dict[str, str] | None = None
     cwd: str | None = None
+    url: str | None = None
+    headers: dict[str, str] | None = None
 
 
 @dataclass(frozen=True)
@@ -76,6 +82,11 @@ def load_config(path: str | Path) -> tuple[list[ServerSpec], dict[str, list[str]
     for name, s in cfg["servers"].items():
         if SEP in name:
             raise ValueError(f"server name {name!r} must not contain {SEP!r}")
+        if "url" in s:
+            # ${VAR} in headers is expanded from the environment so tokens stay out of the file.
+            headers = {k: os.path.expandvars(v) for k, v in s.get("headers", {}).items()}
+            specs.append(ServerSpec(name, url=s["url"], headers=headers))
+            continue
         # "python" means the interpreter running the agent, so servers share its venv.
         command = sys.executable if s["command"] == "python" else s["command"]
         specs.append(ServerSpec(name, command, s.get("args", []), s.get("env"), s.get("cwd", str(base))))
@@ -117,14 +128,23 @@ class MCPHub:
     async def __aexit__(self, *exc: object) -> None:
         await self._stack.aclose()
 
-    async def _connect(self, spec: ServerSpec) -> None:
+    async def _open_transport(self, spec: ServerSpec) -> tuple[Any, Any]:
+        if spec.url:
+            http = await self._stack.enter_async_context(httpx2.AsyncClient(headers=spec.headers or {}))
+            return await self._stack.enter_async_context(streamable_http_client(spec.url, http_client=http))
+        if not spec.command:
+            raise ValueError(f"server {spec.name!r} needs a command or a url")
         params = StdioServerParameters(
             command=spec.command,
             args=spec.args,
             env={**os.environ, **(spec.env or {})},
             cwd=spec.cwd,
         )
-        read, write = await self._stack.enter_async_context(stdio_client(params, errlog=open(os.devnull, "w")))
+        errlog = self._stack.enter_context(open(os.devnull, "w"))
+        return await self._stack.enter_async_context(stdio_client(params, errlog=errlog))
+
+    async def _connect(self, spec: ServerSpec) -> None:
+        read, write = await self._open_transport(spec)
         session = await self._stack.enter_async_context(ClientSession(read, write))
         await session.initialize()
         self._sessions[spec.name] = session
@@ -156,6 +176,6 @@ class MCPHub:
                 result = await session.call_tool(tool.remote_name, arguments)
         except TimeoutError as e:
             raise TransientToolError(f"{name} timed out after {self.call_timeout}s") from e
-        except (anyio.ClosedResourceError, anyio.BrokenResourceError, OSError) as e:
+        except (anyio.ClosedResourceError, anyio.BrokenResourceError, OSError, httpx2.TransportError) as e:
             raise TransientToolError(f"{name}: transport failed: {e}") from e
         return ToolOutcome(_render(result), is_error=bool(result.is_error))
