@@ -1,6 +1,6 @@
 # 06 - Building a Custom MCP Server
 
-Two official SDK paths shown side by side: **Python (FastMCP inside the `mcp` package)** and **TypeScript (`@modelcontextprotocol/sdk`)**. Other SDKs exist (Java, Kotlin, C#, Go, Rust, Swift, Ruby) and follow the same shape.
+Two official SDK paths shown side by side: **Python (`MCPServer` inside the `mcp` package; called FastMCP before mcp 2.0)** and **TypeScript (`@modelcontextprotocol/sdk`)**. Other SDKs exist (Java, Kotlin, C#, Go, Rust, Swift, Ruby) and follow the same shape.
 
 ## 6.1 Decide before coding
 
@@ -19,9 +19,9 @@ uv init my-server && cd my-server && uv add "mcp[cli]"
 
 `server.py`:
 ```python
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer  # mcp>=2; in 1.x: from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("demo")
+mcp = MCPServer("demo")
 
 @mcp.tool()
 def add(a: int, b: int) -> int:
@@ -124,9 +124,9 @@ Checklist:
 
 ## 6.5 Adding progress, logging, and cancellation
 
-Python FastMCP gives you a `Context`:
+Python MCPServer gives you a `Context`:
 ```python
-from mcp.server.fastmcp import Context
+from mcp.server.mcpserver import Context
 
 @mcp.tool()
 async def long_job(n: int, ctx: Context) -> str:
@@ -190,7 +190,7 @@ my-server/
   pyproject.toml     # or package.json
   src/my_server/
     __init__.py
-    server.py        # FastMCP instance + entry point
+    server.py        # MCPServer instance + entry point
     tools/           # one module per tool group
     resources/
   tests/

@@ -20,11 +20,16 @@
 - [x] Prompt-injection fencing and scanning of tool output
 - [x] OpenTelemetry tracing (JSONL + OTLP), trace viewer CLI
 - [x] Offline end-to-end tests with a scripted model
-- [ ] Eval set of tasks with graded answers, run in CI
-- [ ] Parallel step execution for independent steps
+- [x] Eval set of tasks with graded answers, run in CI
+- [x] Parallel execution of read-only tool calls within a turn
+- [x] Prompt caching and per-run cost accounting with a dollar budget
+- [x] Remote servers over Streamable HTTP; web fetch server with allowlist + SSRF guard
+- [ ] Parallel execution of independent plan steps (needs a dependency-aware planner)
+- [ ] LLM-judge graders for open-ended answers
+- [ ] Publish live eval results on the site
 
 ## Phase 3 - Remote + auth
-- [ ] Deploy a Streamable HTTP server (Cloudflare Workers or a small VPS)
+- [ ] Deploy a Streamable HTTP server (Cloudflare Workers or a small VPS). The agent hub can already connect to one
 - [ ] Implement OAuth 2.1 with PKCE, dynamic client registration
 - [ ] Document token audience, resource indicators, and refresh flows
 
