@@ -1,0 +1,62 @@
+name: agent
+
+on:
+  push:
+    paths: ["agent/**", ".github/workflows/agent.yml"]
+  pull_request:
+    paths: ["agent/**", ".github/workflows/agent.yml"]
+  workflow_dispatch:
+    inputs:
+      min_pass:
+        description: "Minimum eval pass rate"
+        default: "0.8"
+
+defaults:
+  run:
+    working-directory: agent
+
+jobs:
+  test:
+    # Offline: real MCP servers, scripted model. No API key needed.
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run pytest -q
+
+  eval:
+    # Live: calls Claude. Runs on pushes to main and on demand, only when the secret exists.
+    needs: test
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - name: Run evals
+        run: |
+          set -o pipefail
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY secret not set; skipping live evals." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          uv run mcp-agent eval evals/tasks.jsonl --min-pass "${{ inputs.min_pass || '0.8' }}" | tee eval-report.md
+          cat eval-report.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            agent/evals/results/
+            agent/traces/
+          if-no-files-found: ignore
