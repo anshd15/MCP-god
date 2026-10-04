@@ -1,4 +1,4 @@
-"""Minimal MCP server in Python using FastMCP.
+"""Minimal MCP server in Python using MCPServer (mcp 2.x; FastMCP in 1.x).
 
 Run:   uv run server.py            (stdio)
 Test:  npx @modelcontextprotocol/inspector uv run server.py
@@ -7,14 +7,16 @@ Add:   claude mcp add mcp-god-py -- uv run --directory <abs path> server.py
 
 from datetime import datetime, timezone
 
-from mcp.server.fastmcp import Context, FastMCP
+from mcp.server.mcpserver import Context, MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
+from mcp.types import ToolAnnotations
 
-mcp = FastMCP("mcp-god-python")
+mcp = MCPServer("mcp-god-python")
 
 NOTES: dict[str, str] = {}
 
 
-@mcp.tool(annotations={"readOnlyHint": True})
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True))
 def now() -> str:
     """Current UTC time in ISO 8601. Use when the user asks the time or date."""
     return datetime.now(timezone.utc).isoformat()
@@ -26,16 +28,16 @@ def add(a: float, b: float) -> float:
     return a + b
 
 
-@mcp.tool(annotations={"idempotentHint": True})
+@mcp.tool(annotations=ToolAnnotations(idempotent_hint=True))
 def save_note(key: str, text: str) -> str:
     """Save a short note under a key. Overwrites if the key exists."""
     if not key.strip():
-        raise ValueError("key must not be empty")
+        raise ToolError("key must not be empty")  # ToolError text reaches the client
     NOTES[key] = text
     return f"saved {key!r} ({len(text)} chars)"
 
 
-@mcp.tool(annotations={"readOnlyHint": True})
+@mcp.tool(annotations=ToolAnnotations(read_only_hint=True))
 def list_notes() -> str:
     """List saved note keys."""
     return "\n".join(sorted(NOTES)) or "(no notes)"
