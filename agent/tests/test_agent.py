@@ -132,3 +132,23 @@ def test_run_blocks_injection_and_unapproved_writes(tmp_path):
     assert tool_spans["fs__write_file"]["decision"] == "deny"
     assert {"run", "plan", "replan", "step", "llm.call", "synthesize"} <= {s["name"] for s in spans}
     assert "tool.call" in render_tree(result.trace_file)
+
+
+def test_mixed_tool_batch_keeps_model_order(tmp_path):
+    plan = {"steps": [{"goal": "Read two files and try a write", "tools_hint": []}]}
+    batch = NS(
+        content=[
+            NS(type="tool_use", id="a", name="fs__write_file", input={"path": "x.md", "content": "x"}),
+            NS(type="tool_use", id="b", name="fs__read_file", input={"path": "notes.md"}),
+            NS(type="tool_use", id="c", name="sqlite__list_tables", input={}),
+        ],
+        stop_reason="tool_use",
+        usage=NS(input_tokens=10, output_tokens=5),
+    )
+    llm = ScriptedLLM([text(json.dumps(plan)), batch, text("done"), text("final")])
+    anyio.run(lambda: run_task("t", config=CONFIG, llm=llm, trace_dir=tmp_path))
+
+    tool_results = llm.calls[2]["messages"][2]["content"]
+    assert [r["tool_use_id"] for r in tool_results] == ["a", "b", "c"]
+    assert tool_results[0]["is_error"] and "denied" in tool_results[0]["content"]
+    assert "trimmer" in tool_results[1]["content"] and "CREATE TABLE" in tool_results[2]["content"]

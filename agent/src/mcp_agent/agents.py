@@ -14,6 +14,7 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
+import anyio
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
@@ -168,10 +169,32 @@ class Executor:
                 return StepResult(step, not text.startswith("STEP_FAILED"), text)
 
             # All results go back in one user message so parallel tool use keeps working.
-            results = [await self._run_tool(u.id, u.name, dict(u.input or {})) for u in uses]
+            results = await self._run_tools(uses)
             messages.append({"role": "user", "content": results})
 
         return StepResult(step, False, f"STEP_FAILED: no answer after {self.max_turns} turns")
+
+    def _parallel_safe(self, name: str) -> bool:
+        tool = self.hub.tools.get(name)
+        return tool is not None and tool.read_only and self.policy.decide(tool) == Decision.ALLOW
+
+    async def _run_tools(self, uses: list[Any]) -> list[dict[str, Any]]:
+        """Run read-only, auto-allowed calls concurrently; anything needing approval or
+        able to mutate state runs afterwards, one at a time, in the model's order."""
+        results: list[dict[str, Any] | None] = [None] * len(uses)
+
+        async def run(i: int) -> None:
+            u = uses[i]
+            results[i] = await self._run_tool(u.id, u.name, dict(u.input or {}))
+
+        parallel = [i for i, u in enumerate(uses) if self._parallel_safe(u.name)]
+        async with anyio.create_task_group() as tg:
+            for i in parallel:
+                tg.start_soon(run, i)
+        for i in range(len(uses)):
+            if results[i] is None:
+                await run(i)
+        return [r for r in results if r is not None]
 
     async def _run_tool(self, use_id: str, name: str, args: dict[str, Any]) -> dict[str, Any]:
         def result(text: str, is_error: bool = False) -> dict[str, Any]:
