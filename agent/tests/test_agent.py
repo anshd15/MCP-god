@@ -152,3 +152,16 @@ def test_mixed_tool_batch_keeps_model_order(tmp_path):
     assert [r["tool_use_id"] for r in tool_results] == ["a", "b", "c"]
     assert tool_results[0]["is_error"] and "denied" in tool_results[0]["content"]
     assert "trimmer" in tool_results[1]["content"] and "CREATE TABLE" in tool_results[2]["content"]
+
+
+def test_cost_accounting_prices_cache_and_fallback_model():
+    from mcp_agent.costs import cost_usd
+
+    msg = NS(model="claude-opus-5-5", usage=NS(input_tokens=1_000_000, output_tokens=100_000,
+                                                cache_read_input_tokens=1_000_000, cache_creation_input_tokens=0))
+    assert cost_usd(msg) == pytest.approx(4.0 + 2.0 + 0.20)
+    msg.model = "claude-sonnet-5-5"
+    assert cost_usd(msg) == pytest.approx(2.0 + 1.0 + 0.20)
+    b = Budget(max_cost_usd=1.0)
+    with pytest.raises(BudgetExceeded):
+        b.charge_cost(1.5)

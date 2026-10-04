@@ -40,6 +40,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--yes", action="store_true", help="auto-approve tools that need approval")
     r.add_argument("--max-steps", type=int, default=8)
     r.add_argument("--max-tool-calls", type=int, default=30)
+    r.add_argument("--max-cost", type=float, default=2.0, help="stop the run past this many USD")
     tr = sub.add_parser("trace", help="print a trace file as a span tree")
     tr.add_argument("file", type=Path)
     args = p.parse_args(argv)
@@ -48,13 +49,13 @@ def main(argv: list[str] | None = None) -> int:
         print(render_tree(args.file))
         return 0
 
-    budget = Budget(max_steps=args.max_steps, max_tool_calls=args.max_tool_calls)
+    budget = Budget(max_steps=args.max_steps, max_tool_calls=args.max_tool_calls, max_cost_usd=args.max_cost)
     approver = _auto_approver if args.yes else _prompt_approver
     result = anyio.run(lambda: run_task(args.task, config=args.config, approver=approver, budget=budget))
     print(result.answer)
     print(
         f"\n-- run {result.run_id}: {len(result.steps)} steps, {result.budget.tool_calls} tool calls, "
-        f"{result.budget.tokens} tokens. Trace: {result.trace_file}",
+        f"{result.budget.tokens} tokens, ${result.budget.cost_usd:.4f}. Trace: {result.trace_file}",
         file=sys.stderr,
     )
     return 1 if result.errors else 0

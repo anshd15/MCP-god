@@ -76,9 +76,11 @@ class Budget:
     max_steps: int = 8
     max_tool_calls: int = 30
     max_tokens: int = 400_000
+    max_cost_usd: float = 2.0
     steps: int = 0
     tool_calls: int = 0
     tokens: int = 0
+    cost_usd: float = 0.0
 
     def charge_step(self) -> None:
         self.steps += 1
@@ -94,6 +96,11 @@ class Budget:
         self.tokens += n
         if self.tokens > self.max_tokens:
             raise BudgetExceeded(f"token budget {self.max_tokens} exceeded")
+
+    def charge_cost(self, usd: float) -> None:
+        self.cost_usd += usd
+        if self.cost_usd > self.max_cost_usd:
+            raise BudgetExceeded(f"cost budget ${self.max_cost_usd:.2f} exceeded")
 
 
 # --- Untrusted tool output -------------------------------------------------

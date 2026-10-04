@@ -18,6 +18,7 @@ import anyio
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
+from .costs import cost_usd
 from .guardrails import Approver, Budget, Decision, Policy, validate_args, wrap_untrusted
 from .hub import MCPHub, TransientToolError
 from .llm import CACHE, LLM, cache_tokens, text_of, usage_tokens
@@ -80,8 +81,9 @@ def _charge(span: trace.Span, budget: Budget, msg: Any) -> None:
     read, write = cache_tokens(msg)
     span.set_attributes({
         "tokens.in": tin, "tokens.out": tout, "tokens.cache_read": read, "tokens.cache_write": write,
-        "stop_reason": str(msg.stop_reason),
+        "stop_reason": str(msg.stop_reason), "cost.usd": round(cost_usd(msg), 6),
     })
+    budget.charge_cost(cost_usd(msg))
     budget.charge_tokens(tin + tout)
 
 

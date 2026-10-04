@@ -75,10 +75,19 @@ async def run_task(
                 except BudgetExceeded as e:
                     errors.append(str(e))
                     root.set_status(Status(StatusCode.ERROR, str(e)))
-                answer = await synthesize(llm, t, budget, task, results) if results else "Nothing was completed."
+                if not results:
+                    answer = "Nothing was completed."
+                elif errors:
+                    # Budget is spent; report raw step results instead of paying for synthesis.
+                    answer = "\n".join(f"- {r.step.goal}: {r.text}" for r in results)
+                else:
+                    answer = await synthesize(llm, t, budget, task, results)
                 if errors:
                     answer += f"\n\n(Stopped early: {'; '.join(errors)})"
-            root.set_attributes({"budget.tokens": budget.tokens, "budget.tool_calls": budget.tool_calls})
+            root.set_attributes({
+                "budget.tokens": budget.tokens, "budget.tool_calls": budget.tool_calls,
+                "cost.usd": round(budget.cost_usd, 6),
+            })
     finally:
         provider.shutdown()
 
