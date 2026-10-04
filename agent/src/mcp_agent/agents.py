@@ -20,7 +20,7 @@ from opentelemetry.trace import Status, StatusCode
 
 from .guardrails import Approver, Budget, Decision, Policy, validate_args, wrap_untrusted
 from .hub import MCPHub, TransientToolError
-from .llm import LLM, text_of, usage_tokens
+from .llm import CACHE, LLM, cache_tokens, text_of, usage_tokens
 from .retry import with_retry
 
 PLAN_SCHEMA = {
@@ -77,7 +77,11 @@ class StepResult:
 
 def _charge(span: trace.Span, budget: Budget, msg: Any) -> None:
     tin, tout = usage_tokens(msg)
-    span.set_attributes({"tokens.in": tin, "tokens.out": tout, "stop_reason": str(msg.stop_reason)})
+    read, write = cache_tokens(msg)
+    span.set_attributes({
+        "tokens.in": tin, "tokens.out": tout, "tokens.cache_read": read, "tokens.cache_write": write,
+        "stop_reason": str(msg.stop_reason),
+    })
     budget.charge_tokens(tin + tout)
 
 
@@ -94,6 +98,7 @@ class Planner:
             msg = await self.llm.create(
                 max_tokens=16000,
                 system=PLANNER_SYSTEM.format(tools=self._tools_text()),
+                cache_control=CACHE,
                 output_config={"effort": "high", "format": {"type": "json_schema", "schema": PLAN_SCHEMA}},
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -152,6 +157,7 @@ class Executor:
                     system=EXECUTOR_SYSTEM,
                     tools=tools,
                     output_config={"effort": "medium"},
+                    cache_control=CACHE,
                     messages=messages,
                 )
                 _charge(span, self.budget, msg)

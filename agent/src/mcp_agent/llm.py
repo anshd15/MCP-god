@@ -37,7 +37,18 @@ def text_of(message: Any) -> str:
     return "\n".join(b.text for b in message.content if b.type == "text").strip()
 
 
-def usage_tokens(message: Any) -> tuple[int, int]:
+# Top-level cache_control caches the last cacheable block, so in a tool loop each
+# request reads the previous turn's prefix from cache and writes the new tail.
+CACHE = {"type": "ephemeral"}
+
+
+def cache_tokens(message: Any) -> tuple[int, int]:
+    """(cache reads, cache writes) for one response."""
     u = message.usage
-    cached = getattr(u, "cache_read_input_tokens", 0) or 0
-    return (u.input_tokens or 0) + cached, u.output_tokens or 0
+    return getattr(u, "cache_read_input_tokens", 0) or 0, getattr(u, "cache_creation_input_tokens", 0) or 0
+
+
+def usage_tokens(message: Any) -> tuple[int, int]:
+    """(total input incl. cached, output) for one response."""
+    read, write = cache_tokens(message)
+    return (message.usage.input_tokens or 0) + read + write, message.usage.output_tokens or 0

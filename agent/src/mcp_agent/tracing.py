@@ -68,7 +68,7 @@ def render_tree(trace_file: Path) -> str:
 
     def walk(span: dict, depth: int) -> None:
         ms = (span["end_ns"] - span["start_ns"]) / 1e6
-        keys = ("tool", "decision", "tokens.in", "tokens.out", "injection.hits", "error", "step.goal")
+        keys = ("tool", "decision", "tokens.in", "tokens.out", "tokens.cache_read", "injection.hits", "error", "step.goal")
         attrs = {k: v for k, v in span["attributes"].items() if k in keys}
         mark = "x" if span["status"] == "ERROR" else "-"
         lines.append(f"{'  ' * depth}{mark} {span['name']} {ms:.0f}ms {attrs if attrs else ''}".rstrip())
