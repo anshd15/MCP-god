@@ -45,6 +45,17 @@ uv run mcp-agent trace traces/<run_id>.jsonl
 
 To see the injection guardrail, try `"Summarize vendor_reply.txt"`. That file contains a planted injection.
 
+## More tools
+
+| Module | Use |
+|---|---|
+| `clients/list_tools.py` | No-LLM client: list hub tools or call one with JSON args |
+| `servers/memory_server.py` | Persistent key-value memory shared across runs |
+| `mcp_agent/gateway.py` | One MCP server forwarding every allowed hub tool (`python -m mcp_agent.gateway`) |
+| `mcp_agent/ratelimit.py` | Token-bucket limits per tool glob |
+| `mcp_agent/logs.py` | JSON logs carrying trace and span ids |
+| `evals/judge_tasks.jsonl` | Open-ended tasks graded by an LLM judge |
+
 ## Evaluate
 
 ```bash
