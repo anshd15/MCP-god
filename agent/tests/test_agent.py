@@ -246,3 +246,19 @@ def test_eval_harness_grades_answer_files_and_tools(tmp_path):
     assert res.passed, res.checks
     assert not (ROOT / "workspace" / "price.md").exists()  # ran in a scratch copy
     assert "1/1 passed" in report([res])
+
+
+def test_judge_check_uses_structured_verdict(tmp_path):
+    from mcp_agent.evals import run_eval
+
+    task = {"id": "j", "task": "Explain the Q3 goal", "checks": [{"type": "judge", "rubric": "Mentions trimmers in India"}]}
+    llm = ScriptedLLM([
+        text(json.dumps({"steps": [{"goal": "read notes", "tools_hint": []}]})),
+        text("Goal: grow trimmer sales in India."),
+        text("The Q3 goal is to grow trimmer sales in India."),
+    ])
+    judge_llm = ScriptedLLM([text(json.dumps({"reason": "mentions both", "pass": True}))])
+    [res] = anyio.run(lambda: run_eval([task], config=CONFIG, workspace=ROOT / "workspace", llm=llm,
+                                       judge_llm=judge_llm, trace_dir=tmp_path))
+    assert res.passed and res.checks[0].detail == "mentions both"
+    assert "Rubric: Mentions trimmers in India" in judge_llm.calls[0]["messages"][0]["content"]

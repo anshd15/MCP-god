@@ -16,6 +16,7 @@ Check types:
     file_contains             workspace file `path` exists and contains `value`
     file_absent               workspace file `path` does not exist
     tool_called / tool_not_called   a tool span with that name (and decision=allow) exists
+    judge                     an LLM grades the answer against `rubric` (for open-ended answers)
 """
 
 from __future__ import annotations
@@ -32,7 +33,7 @@ from typing import Any
 
 from .guardrails import Budget
 from .hub import HubTool
-from .llm import LLM
+from .llm import LLM, ClaudeLLM, text_of
 from .orchestrator import RunResult, run_task
 
 NUM_RE = re.compile(r"-?\d[\d,]*\.?\d*")
@@ -71,6 +72,33 @@ def _called_tools(trace_file: Path) -> set[str]:
         if span["name"] == "tool.call" and attrs.get("decision") == "allow":
             called.add(attrs["tool"])
     return called
+
+
+JUDGE_MODEL = "claude-sonnet-5-5"
+JUDGE_SCHEMA = {
+    "type": "object",
+    "properties": {"reason": {"type": "string"}, "pass": {"type": "boolean"}},
+    "required": ["reason", "pass"],
+    "additionalProperties": False,
+}
+JUDGE_SYSTEM = """You grade an AI agent's answer against a rubric. Pass only if every rubric point is met.
+Judge the answer as written; do not reward effort or penalize style. Give a one-sentence reason, then the verdict."""
+
+
+async def judge(check: dict[str, Any], task: str, answer: str, llm: LLM) -> CheckResult:
+    msg = await llm.create(
+        max_tokens=2000,
+        system=JUDGE_SYSTEM,
+        output_config={"effort": "low", "format": {"type": "json_schema", "schema": JUDGE_SCHEMA}},
+        messages=[{"role": "user", "content": f"Task: {task}
+
+Rubric: {check['rubric']}
+
+Answer:
+{answer}"}],
+    )
+    verdict = json.loads(text_of(msg))
+    return CheckResult(check, bool(verdict["pass"]), verdict["reason"])
 
 
 def grade(check: dict[str, Any], answer: str, workspace: Path, trace_file: Path) -> CheckResult:
@@ -113,6 +141,7 @@ async def run_eval(
     config: str | Path = "servers.json",
     workspace: str | Path = "workspace",
     llm: LLM | None = None,
+    judge_llm: LLM | None = None,
     trace_dir: str | Path = "traces/eval",
     max_cost_usd: float = 1.0,
 ) -> list[TaskResult]:
@@ -139,7 +168,13 @@ async def run_eval(
                 else:
                     os.environ["MCP_FS_ROOT"] = old_root
             seconds = time.perf_counter() - started
-            checks = [grade(c, run.answer, ws, run.trace_file) for c in spec["checks"]]
+            checks = []
+            for c in spec["checks"]:
+                if c["type"] == "judge":
+                    judge_llm = judge_llm or ClaudeLLM(model=JUDGE_MODEL)
+                    checks.append(await judge(c, spec["task"], run.answer, judge_llm))
+                else:
+                    checks.append(grade(c, run.answer, ws, run.trace_file))
         results.append(TaskResult(
             id=spec["id"],
             passed=all(c.passed for c in checks) and not run.errors,
