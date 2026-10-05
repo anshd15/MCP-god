@@ -16,7 +16,7 @@
 - [x] `agent/`: eval harness with 12 tasks, CI on Linux and Windows
 - [ ] `agent/`: parallel plan steps, LLM-judge graders, publish eval results on the site
 - [ ] Build 5 servers of increasing complexity: echo -> filesystem -> SQLite -> REST wrapper -> stateful agent tool
-- [ ] Add a `clients/` folder with a tiny Python MCP client that lists tools and calls them (no LLM needed)
+- [x] Add a `clients/` folder with a tiny Python MCP client that lists tools and calls them (no LLM needed)
 - [ ] Add MCP Inspector walkthrough with screenshots
 - [ ] Add a test harness: spawn server over stdio, assert `tools/list` output
 
@@ -31,7 +31,7 @@
 - [x] Prompt caching and per-run cost accounting with a dollar budget
 - [x] Remote servers over Streamable HTTP; web fetch server with allowlist + SSRF guard
 - [ ] Parallel execution of independent plan steps (needs a dependency-aware planner)
-- [ ] LLM-judge graders for open-ended answers
+- [x] LLM-judge graders for open-ended answers
 - [ ] Publish live eval results on the site
 
 ## Phase 3 - Remote + auth
@@ -40,7 +40,7 @@
 - [ ] Document token audience, resource indicators, and refresh flows
 
 ## Phase 4 - Production patterns
-- [ ] Gateway / aggregator server that proxies multiple upstream servers
+- [x] Gateway / aggregator server that proxies multiple upstream servers (agent/src/mcp_agent/gateway.py)
 - [ ] Observability: structured logs, tracing per request id, rate limits
 - [ ] Prompt-injection red-team of my own servers, write findings
 
