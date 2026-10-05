@@ -2,6 +2,12 @@
 
 All notable changes, newest first. Dates are the day the commit series landed.
 
+## 2026-10-05 - Agent extensions
+
+- LLM-judge grader and judge-graded eval tasks
+- No-LLM client, persistent memory server, gateway server
+- Token-bucket rate limiter and trace-correlated JSON logs
+
 ## 2026-10-05
 
 - Contributor guide, changelog, editor config, issue and PR templates.
