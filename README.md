@@ -20,6 +20,9 @@ Custom server build steps, the session lifecycle, and JSON-RPC data flow, animat
 | Examples | [examples/](examples/) | Minimal runnable servers |
 | Agent | [agent/](agent/) | Planner/executor multi-agent system over MCP with guardrails, retries, and tracing |
 | Animated site | [site/](site/) | Live at https://mcp-god.vercel.app |
+| Agent | [agent/](agent/) | `mcp-agent`: planner + guarded executor over an MCP hub, evals, tracing, CI |
+| Glossary | [docs/08-glossary.md](docs/08-glossary.md) | Every term, one line, linked to its guide |
+| FAQ | [docs/09-faq.md](docs/09-faq.md) | Questions that came up while building this |
 | Roadmap | [ROADMAP.md](ROADMAP.md) | Where this project goes next |
 
 ## Outline (Phase 1 = this repo's first 6 commits)

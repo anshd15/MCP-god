@@ -8,7 +8,13 @@
 - [x] Two runnable starter servers
 - [x] Animated companion site (site/) deployed on Vercel
 
-## Phase 2 - Hands-on lab (next)
+## Phase 2 - Hands-on lab (in progress, see agent/)
+- [x] `agent/`: MCP hub with namespaced tools, timeouts, retries
+- [x] `agent/`: sandboxed filesystem, read-only SQLite, and web-fetch MCP servers
+- [x] `agent/`: Claude planner, guarded executor, tool policy, injection fencing
+- [x] `agent/`: tracing, cost budget, prompt caching, parallel read-only calls
+- [x] `agent/`: eval harness with 12 tasks, CI on Linux and Windows
+- [ ] `agent/`: parallel plan steps, LLM-judge graders, publish eval results on the site
 - [ ] Build 5 servers of increasing complexity: echo -> filesystem -> SQLite -> REST wrapper -> stateful agent tool
 - [ ] Add a `clients/` folder with a tiny Python MCP client that lists tools and calls them (no LLM needed)
 - [ ] Add MCP Inspector walkthrough with screenshots
